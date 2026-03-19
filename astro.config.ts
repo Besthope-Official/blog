@@ -14,6 +14,18 @@ import { SITE } from "./src/config";
 // https://astro.build/config
 export default defineConfig({
   site: SITE.website,
+  i18n: {
+    defaultLocale: "zh-cn",
+    locales: ["zh-cn", "en"],
+    fallback: {
+      en: "zh-cn",
+    },
+    routing: {
+      prefixDefaultLocale: false,
+      redirectToDefaultLocale: false,
+      fallbackType: "redirect",
+    },
+  },
   integrations: [
     sitemap({
       filter: page => SITE.showArchives || !page.endsWith("/archives"),
@@ -57,17 +69,33 @@ export default defineConfig({
       }),
     },
   },
-  experimental: {
-    preserveScriptOrder: true,
-    fonts: [
-      {
-        name: "Google Sans Code",
-        cssVariable: "--font-google-sans-code",
-        provider: fontProviders.google(),
-        fallbacks: ["monospace"],
-        weights: [300, 400, 500, 600, 700],
-        styles: ["normal", "italic"],
+  fonts: [
+    {
+      provider: fontProviders.local(),
+      name: "LXGW WenKai Mono",
+      cssVariable: "--font-lxgw-wenkai-mono",
+      options: {
+        variants: [
+          {
+            weight: 300,
+            style: "normal",
+            src: ["./public/fonts/LXGWWenKaiMono-Light.ttf"],
+          },
+          {
+            weight: 400,
+            style: "normal",
+            src: ["./public/fonts/LXGWWenKaiMono-Regular.ttf"],
+          },
+          {
+            weight: 500,
+            style: "normal",
+            src: ["./public/fonts/LXGWWenKaiMono-Medium.ttf"],
+          },
+        ],
       },
-    ],
-  },
+      fallbacks: ["ui-monospace", "SFMono-Regular", "Consolas", "monospace"],
+      display: "optional",
+      subsets: ["latin"],
+    },
+  ],
 });
