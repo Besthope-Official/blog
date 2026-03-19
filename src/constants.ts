@@ -1,13 +1,8 @@
 import type { Props } from "astro";
 import IconMail from "@/assets/icons/IconMail.svg";
-import IconGitHub from "@/assets/icons/IconGitHub.svg";
 import IconBrandX from "@/assets/icons/IconBrandX.svg";
-import IconLinkedin from "@/assets/icons/IconLinkedin.svg";
-import IconWhatsapp from "@/assets/icons/IconWhatsapp.svg";
-import IconFacebook from "@/assets/icons/IconFacebook.svg";
-import IconTelegram from "@/assets/icons/IconTelegram.svg";
-import IconPinterest from "@/assets/icons/IconPinterest.svg";
-import { SITE } from "@/config";
+import IconTencentQQ from "@/assets/icons/IconTencentQQ.svg";
+import IconTencentQzone from "@/assets/icons/IconTencentQzone.svg";
 
 interface Social {
   name: string;
@@ -16,68 +11,31 @@ interface Social {
   icon: (_props: Props) => Element;
 }
 
-export const SOCIALS: Social[] = [
-  {
-    name: "GitHub",
-    href: "https://github.com/satnaing/astro-paper",
-    linkTitle: `${SITE.title} 的 GitHub`,
-    icon: IconGitHub,
-  },
-  {
-    name: "X",
-    href: "https://x.com/username",
-    linkTitle: `${SITE.title} 的 X`,
-    icon: IconBrandX,
-  },
-  {
-    name: "LinkedIn",
-    href: "https://www.linkedin.com/in/username/",
-    linkTitle: `${SITE.title} 的 LinkedIn`,
-    icon: IconLinkedin,
-  },
-  {
-    name: "Mail",
-    href: "mailto:yourmail@gmail.com",
-    linkTitle: `给 ${SITE.title} 发送邮件`,
-    icon: IconMail,
-  },
-] as const;
+export const SOCIALS: Social[] = [];
 
 export const SHARE_LINKS: Social[] = [
   {
-    name: "WhatsApp",
-    href: "https://wa.me/?text=",
-    linkTitle: `通过 WhatsApp 分享这篇文章`,
-    icon: IconWhatsapp,
+    name: "QQ",
+    href: "https://connect.qq.com/widget/shareqq/index.html?url=",
+    linkTitle: "分享到 QQ",
+    icon: IconTencentQQ,
   },
   {
-    name: "Facebook",
-    href: "https://www.facebook.com/sharer.php?u=",
-    linkTitle: `分享到 Facebook`,
-    icon: IconFacebook,
+    name: "QZone",
+    href: "https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=",
+    linkTitle: "分享到 QQ 空间",
+    icon: IconTencentQzone,
   },
   {
     name: "X",
     href: "https://x.com/intent/post?url=",
-    linkTitle: `分享到 X`,
+    linkTitle: "分享到 X",
     icon: IconBrandX,
-  },
-  {
-    name: "Telegram",
-    href: "https://t.me/share/url?url=",
-    linkTitle: `通过 Telegram 分享这篇文章`,
-    icon: IconTelegram,
-  },
-  {
-    name: "Pinterest",
-    href: "https://pinterest.com/pin/create/button/?url=",
-    linkTitle: `分享到 Pinterest`,
-    icon: IconPinterest,
   },
   {
     name: "Mail",
     href: "mailto:?subject=%E7%9C%8B%E7%9C%8B%E8%BF%99%E7%AF%87%E6%96%87%E7%AB%A0&body=",
-    linkTitle: `通过邮件分享这篇文章`,
+    linkTitle: "通过邮件分享这篇文章",
     icon: IconMail,
   },
 ] as const;

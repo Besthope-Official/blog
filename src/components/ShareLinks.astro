@@ -3,6 +3,7 @@ import { SHARE_LINKS } from "@/constants";
 import LinkButton from "./LinkButton.astro";
 
 const URL = Astro.url;
+const encodedURL = encodeURIComponent(URL.toString());
 ---
 
 {
@@ -12,7 +13,7 @@ const URL = Astro.url;
       <div class="text-center">
         {SHARE_LINKS.map(social => (
           <LinkButton
-            href={`${social.href + URL}`}
+            href={`${social.href}${encodedURL}`}
             class="scale-90 p-2 hover:rotate-6 sm:p-1"
             title={social.linkTitle}
           >
