@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ props }) => {
   if (!SITE.dynamicOgImage) {
     return new Response(null, {
       status: 404,
-      statusText: "Not found",
+      statusText: "未找到",
     });
   }
 

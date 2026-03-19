@@ -178,7 +178,7 @@ export default async post => {
                             type: "span",
                             props: {
                               children: [
-                                "by ",
+                                "\u4f5c\u8005\uff1a",
                                 {
                                   type: "span",
                                   props: {
@@ -222,7 +222,7 @@ export default async post => {
       height: 630,
       embedFont: true,
       fonts: await loadGoogleFonts(
-        post.data.title + post.data.author + SITE.title + "by"
+        post.data.title + post.data.author + SITE.title + "\u4f5c\u8005"
       ),
     }
   );

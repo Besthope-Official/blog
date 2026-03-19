@@ -2,6 +2,10 @@
 const THEME = "theme";
 const LIGHT = "light";
 const DARK = "dark";
+const THEME_LABELS: Record<string, string> = {
+  [LIGHT]: "浅色模式",
+  [DARK]: "深色模式",
+};
 
 // Initial color scheme
 // Can be "light", "dark", or empty string for system's prefers-color-scheme
@@ -32,7 +36,9 @@ function setPreference(): void {
 function reflectPreference(): void {
   document.firstElementChild?.setAttribute("data-theme", themeValue);
 
-  document.querySelector("#theme-btn")?.setAttribute("aria-label", themeValue);
+  document
+    .querySelector("#theme-btn")
+    ?.setAttribute("aria-label", THEME_LABELS[themeValue] ?? "自动");
 
   // Get a reference to the body element
   const body = document.body;
