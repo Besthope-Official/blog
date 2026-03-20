@@ -22,6 +22,7 @@ jobs:
       ECS_PORT: ${{ secrets.ECS_PORT }}
       ECS_APP_ROOT: ${{ vars.ECS_APP_ROOT }}
       PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+      KEEP_RELEASES: "5"
 
     steps:
       - name: Checkout repository
@@ -44,29 +45,42 @@ jobs:
       - name: Build site
         run: pnpm run build
 
-      - name: Archive release
-        shell: bash
-        run: |
-          set -eu
-          tar -czf "besthope-blog-${GITHUB_SHA}.tar.gz" -C dist .
-
       - name: Configure SSH
         shell: bash
         run: |
           set -eu
           mkdir -p ~/.ssh
-          printf '%s' "${{ secrets.ECS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.ECS_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "${{ secrets.ECS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
+          printf '%s\n' "${{ secrets.ECS_KNOWN_HOSTS }}" | tr -d '\r' > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Upload release archive
+      - name: Prepare release directory
         shell: bash
         run: |
           set -eu
           PORT="${ECS_PORT:-22}"
-          ARCHIVE_NAME="besthope-blog-${GITHUB_SHA}.tar.gz"
-          scp -P "$PORT" "$ARCHIVE_NAME" "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}:/tmp/$ARCHIVE_NAME"
+          APP_ROOT="${ECS_APP_ROOT:-/var/www/besthope-blog}"
+          RELEASES_DIR="$APP_ROOT/releases"
+          RELEASE_DIR="$RELEASES_DIR/$GITHUB_SHA"
+
+          ssh -p "$PORT" "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}" "\
+            set -eu
+            mkdir -p '$RELEASES_DIR' '$RELEASE_DIR'
+          "
+
+      - name: Sync release with rsync
+        shell: bash
+        run: |
+          set -eu
+          PORT="${ECS_PORT:-22}"
+          APP_ROOT="${ECS_APP_ROOT:-/var/www/besthope-blog}"
+          RELEASE_DIR="$APP_ROOT/releases/$GITHUB_SHA"
+
+          rsync -az --delete \
+            -e "ssh -p $PORT" \
+            dist/ "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}:$RELEASE_DIR/"
 
       - name: Activate release
         shell: bash
@@ -74,15 +88,18 @@ jobs:
           set -eu
           PORT="${ECS_PORT:-22}"
           APP_ROOT="${ECS_APP_ROOT:-/var/www/besthope-blog}"
-          ARCHIVE_NAME="besthope-blog-${GITHUB_SHA}.tar.gz"
           RELEASES_DIR="$APP_ROOT/releases"
           RELEASE_DIR="$RELEASES_DIR/$GITHUB_SHA"
           CURRENT_LINK="$APP_ROOT/current"
+          KEEP_RELEASES_COUNT="${KEEP_RELEASES:-5}"
 
           ssh -p "$PORT" "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}" "\
             set -eu
-            mkdir -p '$RELEASES_DIR' '$RELEASE_DIR'
-            tar -xzf '/tmp/$ARCHIVE_NAME' -C '$RELEASE_DIR'
             ln -sfn '$RELEASE_DIR' '$CURRENT_LINK'
-            rm -f '/tmp/$ARCHIVE_NAME'
+            if [ -d '$RELEASES_DIR' ]; then
+              find '$RELEASES_DIR' -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
+                | sort -nr \
+                | awk 'NR > '"\$KEEP_RELEASES_COUNT"' { print \$2 }' \
+                | xargs -r rm -rf --
+            fi
           "
