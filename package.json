@@ -2,6 +2,9 @@
   "name": "besthope-blog",
   "type": "module",
   "version": "5.5.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build && pagefind --site dist && node -e \"require('fs').cpSync('dist/pagefind', 'public/pagefind', { recursive: true, force: true })\"",
