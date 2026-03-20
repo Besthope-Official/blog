@@ -1,0 +1,88 @@
+name: Deploy to ECS
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ecs
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy static site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ECS_PORT: ${{ secrets.ECS_PORT }}
+      ECS_APP_ROOT: ${{ vars.ECS_APP_ROOT }}
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build site
+        run: pnpm run build
+
+      - name: Archive release
+        shell: bash
+        run: |
+          set -eu
+          tar -czf "besthope-blog-${GITHUB_SHA}.tar.gz" -C dist .
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p ~/.ssh
+          printf '%s' "${{ secrets.ECS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.ECS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Upload release archive
+        shell: bash
+        run: |
+          set -eu
+          PORT="${ECS_PORT:-22}"
+          ARCHIVE_NAME="besthope-blog-${GITHUB_SHA}.tar.gz"
+          scp -P "$PORT" "$ARCHIVE_NAME" "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}:/tmp/$ARCHIVE_NAME"
+
+      - name: Activate release
+        shell: bash
+        run: |
+          set -eu
+          PORT="${ECS_PORT:-22}"
+          APP_ROOT="${ECS_APP_ROOT:-/var/www/besthope-blog}"
+          ARCHIVE_NAME="besthope-blog-${GITHUB_SHA}.tar.gz"
+          RELEASES_DIR="$APP_ROOT/releases"
+          RELEASE_DIR="$RELEASES_DIR/$GITHUB_SHA"
+          CURRENT_LINK="$APP_ROOT/current"
+
+          ssh -p "$PORT" "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}" "\
+            set -eu
+            mkdir -p '$RELEASES_DIR' '$RELEASE_DIR'
+            tar -xzf '/tmp/$ARCHIVE_NAME' -C '$RELEASE_DIR'
+            ln -sfn '$RELEASE_DIR' '$CURRENT_LINK'
+            rm -f '/tmp/$ARCHIVE_NAME'
+          "

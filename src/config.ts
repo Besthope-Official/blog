@@ -1,5 +1,17 @@
+const env =
+  ((import.meta as ImportMeta & { env?: Record<string, string | undefined> })
+    .env ??
+    (typeof globalThis === "object"
+      ? (
+          globalThis as typeof globalThis & {
+            process?: { env?: Record<string, string | undefined> };
+          }
+        ).process?.env
+      : undefined) ??
+    {}) as Record<string, string | undefined>;
+
 export const SITE = {
-  website: "https://besthope-blog.pages.dev/", // replace this with your deployed domain
+  website: env.PUBLIC_SITE_URL ?? "http://blog.singularitylab.online",
   author: "Besthope",
   profile: "",
   desc: "Besthope 的个人博客",
