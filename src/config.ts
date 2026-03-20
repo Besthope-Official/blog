@@ -21,3 +21,19 @@ export const SITE = {
   lang: "zh-CN", // html lang code. Set this empty and default will be "zh-CN"
   timezone: "Asia/Shanghai", // Default global timezone (IANA format)
 } as const;
+
+export const GISCUS = {
+  enabled: true,
+  repo: "Besthope-Official/blog",
+  repoId: "R_kgDORridWQ",
+  category: "Announcements",
+  categoryId: "DIC_kwDORridWc4C41Bw",
+  mapping: "pathname",
+  strict: "0",
+  reactionsEnabled: "1",
+  emitMetadata: "0",
+  inputPosition: "bottom",
+  lang: "zh-CN",
+  lightTheme: "light",
+  darkTheme: "dark",
+} as const;

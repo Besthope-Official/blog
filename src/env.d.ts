@@ -6,4 +6,5 @@ interface Window {
     getTheme: () => string;
     setTheme: (val: string) => void;
   };
+  __giscusThemeSyncRegistered?: boolean;
 }
