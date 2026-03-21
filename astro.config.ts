@@ -13,9 +13,12 @@ import {
 import { transformerFileName } from "./src/utils/transformers/fileName";
 import { SITE } from "./src/config";
 
+import cloudflare from "@astrojs/cloudflare";
+
 // https://astro.build/config
 export default defineConfig({
   site: SITE.website,
+
   i18n: {
     defaultLocale: "zh-cn",
     locales: ["zh-cn", "en"],
@@ -28,11 +31,13 @@ export default defineConfig({
       fallbackType: "redirect",
     },
   },
+
   integrations: [
     sitemap({
       filter: page => SITE.showArchives || !page.endsWith("/archives"),
     }),
   ],
+
   markdown: {
     remarkPlugins: [
       remarkMath,
@@ -53,6 +58,7 @@ export default defineConfig({
       ],
     },
   },
+
   vite: {
     // eslint-disable-next-line
     // @ts-ignore
@@ -63,10 +69,12 @@ export default defineConfig({
       exclude: ["@resvg/resvg-js"],
     },
   },
+
   image: {
     responsiveStyles: true,
     layout: "constrained",
   },
+
   env: {
     schema: {
       PUBLIC_SITE_URL: envField.string({
@@ -76,6 +84,7 @@ export default defineConfig({
       }),
     },
   },
+
   fonts: [
     {
       provider: fontProviders.local(),
@@ -105,4 +114,6 @@ export default defineConfig({
       subsets: ["latin"],
     },
   ],
+
+  adapter: cloudflare(),
 });
