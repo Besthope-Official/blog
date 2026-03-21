@@ -66,7 +66,9 @@ export default defineConfig({
     // See: https://github.com/withastro/astro/issues/14030
     plugins: [tailwindcss()],
     optimizeDeps: {
-      exclude: ["@resvg/resvg-js"],
+      exclude: [
+        "@resvg/resvg-js",
+      ],
     },
   },
 
@@ -115,5 +117,7 @@ export default defineConfig({
     },
   ],
 
-  adapter: cloudflare(),
+  adapter: cloudflare({
+    prerenderEnvironment: 'node'
+  }),
 });
