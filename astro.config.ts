@@ -86,17 +86,17 @@ export default defineConfig({
           {
             weight: 300,
             style: "normal",
-            src: ["./public/fonts/LXGWWenKaiMono-Light.ttf"],
+            src: ["./public/fonts/LXGWWenKaiMono-Light.woff2"],
           },
           {
             weight: 400,
             style: "normal",
-            src: ["./public/fonts/LXGWWenKaiMono-Regular.ttf"],
+            src: ["./public/fonts/LXGWWenKaiMono-Regular.woff2"],
           },
           {
             weight: 500,
             style: "normal",
-            src: ["./public/fonts/LXGWWenKaiMono-Medium.ttf"],
+            src: ["./public/fonts/LXGWWenKaiMono-Medium.woff2"],
           },
         ],
       },

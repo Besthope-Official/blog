@@ -17,7 +17,7 @@ jobs:
   deploy:
     name: Build and deploy static site
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       ECS_PORT: ${{ secrets.ECS_PORT }}
       ECS_APP_ROOT: ${{ vars.ECS_APP_ROOT }}
@@ -79,7 +79,7 @@ jobs:
           RELEASE_DIR="$APP_ROOT/releases/$GITHUB_SHA"
 
           rsync -az --delete \
-            -e "ssh -p $PORT" \
+            -e "ssh -p $PORT -o ConnectTimeout=30 -o ServerAliveInterval=60 -o ServerAliveCountMax=10" \
             dist/ "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}:$RELEASE_DIR/"
 
       - name: Activate release
