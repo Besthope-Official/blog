@@ -1,4 +1,5 @@
 {
+	"account_id": "948bb89312ca4c393f266566c5a44bb7",
 	"compatibility_date": "2026-03-21",
 	"compatibility_flags": ["global_fetch_strictly_public", "nodejs_compat"],
 	"name": "besthope-blog",
@@ -7,6 +8,15 @@
 		"directory": "./dist",
 		"binding": "ASSETS"
 	},
+	"images": {
+		"binding": "IMAGES"
+	},
+	"r2_buckets": [
+		{
+			"binding": "BLOG_BUCKET",
+			"bucket_name": "besthope-blog"
+		}
+	],
 	"observability": {
 		"enabled": true
 	}
