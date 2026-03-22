@@ -11,7 +11,7 @@ const env =
     {}) as Record<string, string | undefined>;
 
 export const SITE = {
-  website: env.PUBLIC_SITE_URL ?? "http://blog.singularitylab.online",
+  website: env.PUBLIC_SITE_URL ?? "https://blog.singularitylab.online",
   author: "Besthope",
   profile: "",
   desc: "Besthope 的个人博客",

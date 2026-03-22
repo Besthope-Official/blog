@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
+import { SITE } from "../../config";
 
 export const prerender = false;
 
@@ -22,11 +23,11 @@ const CONTENT_TYPES = new Map<string, string>([
 
 const notFound = () => new Response("Not Found", { status: 404 });
 
-// Proxy /r2/* to PUBLIC_SITE_URL when CF bindings are unavailable (astro dev).
-// Set PUBLIC_SITE_URL=https://your-production-site to proxy to production,
-// or PUBLIC_SITE_URL=http://localhost:8787 to proxy to a local wrangler dev instance.
+// Proxy /r2/* to the configured site origin when CF bindings are unavailable
+// (astro dev). Override PUBLIC_SITE_URL to target a different origin, such as
+// a local wrangler dev instance.
 const getDevProxyOrigin = () => {
-  const siteUrl = import.meta.env.PUBLIC_SITE_URL;
+  const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? SITE.website;
   if (!siteUrl) return null;
   try {
     return new URL(siteUrl).origin;
@@ -127,7 +128,8 @@ const buildPassthroughResponse = (
 
 // In astro dev (Vite), cloudflare:workers bindings are shimmed as undefined.
 // In wrangler dev or production, they are real objects.
-const hasBucket = !!(env as Record<string, unknown>).BLOG_BUCKET;
+const workerEnv = env as Partial<Env>;
+const hasBucket = !!workerEnv.BLOG_BUCKET;
 
 export const GET: APIRoute = async ({ params, request }) => {
   const key = normalizeKey(params.key);

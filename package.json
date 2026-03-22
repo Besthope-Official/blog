@@ -6,7 +6,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "PUBLIC_SITE_URL=https://blog.singularitylab.online astro dev",
+    "dev": "astro dev",
     "dev:local": "astro build && wrangler dev",
     "build": "node -e \"for (const dir of ['.astro', 'node_modules/.astro', 'dist', 'public/pagefind']) require('fs').rmSync(dir, { recursive: true, force: true })\" && astro check && astro build && pagefind --site dist && node -e \"require('fs').cpSync('dist/pagefind', 'public/pagefind', { recursive: true, force: true })\"",
     "preview": "astro preview",
