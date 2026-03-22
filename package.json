@@ -6,7 +6,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "astro dev",
+    "dev": "PUBLIC_SITE_URL=https://blog.singularitylab.online astro dev",
+    "dev:local": "astro build && wrangler dev",
     "build": "node -e \"for (const dir of ['.astro', 'node_modules/.astro', 'dist', 'public/pagefind']) require('fs').rmSync(dir, { recursive: true, force: true })\" && astro check && astro build && pagefind --site dist && node -e \"require('fs').cpSync('dist/pagefind', 'public/pagefind', { recursive: true, force: true })\"",
     "preview": "astro preview",
     "sync": "astro sync",
@@ -14,7 +15,10 @@
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "lint": "eslint .",
-    "generate-types": "wrangler types"
+    "prepare": "git config core.hooksPath .githooks",
+    "generate-types": "wrangler types",
+    "r2:sync": "node scripts/r2-sync.mjs",
+    "r2:sync:remote": "node scripts/r2-sync.mjs --remote"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.3",

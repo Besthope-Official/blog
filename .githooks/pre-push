@@ -1,0 +1,7 @@
+#!/bin/sh
+echo "Syncing .images/ to remote R2..."
+pnpm r2:sync
+if [ $? -ne 0 ]; then
+  echo "R2 sync failed. Push aborted."
+  exit 1
+fi

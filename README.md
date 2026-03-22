@@ -1,10 +1,11 @@
 # Besthope's blog
 
-techstack: [Astro v6](https://github.com/withastro/astro)
-theme: [astroPaper](https://github.com/satnaing/astro-paper)
-font: LXGW WenKai Mono
-comments: `Giscus` for post pages
-with Cloudflare R2
+- techstack: [Astro v6](https://github.com/withastro/astro)
+- theme: [astroPaper](https://github.com/satnaing/astro-paper)
+- font: LXGW WenKai Mono
+- comments: `Giscus` for post pages
+- deploy: Cloudflare Page
+- image storage: Cloudflare R2
 
 ## TODO
 

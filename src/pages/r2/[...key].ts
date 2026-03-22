@@ -22,6 +22,19 @@ const CONTENT_TYPES = new Map<string, string>([
 
 const notFound = () => new Response("Not Found", { status: 404 });
 
+// Proxy /r2/* to PUBLIC_SITE_URL when CF bindings are unavailable (astro dev).
+// Set PUBLIC_SITE_URL=https://your-production-site to proxy to production,
+// or PUBLIC_SITE_URL=http://localhost:8787 to proxy to a local wrangler dev instance.
+const getDevProxyOrigin = () => {
+  const siteUrl = import.meta.env.PUBLIC_SITE_URL;
+  if (!siteUrl) return null;
+  try {
+    return new URL(siteUrl).origin;
+  } catch {
+    return null;
+  }
+};
+
 const normalizeKey = (rawKey: string | undefined) => {
   if (!rawKey) return null;
 
@@ -49,8 +62,6 @@ const getExtension = (key: string) =>
 const getContentType = (key: string) =>
   CONTENT_TYPES.get(getExtension(key)) ?? "application/octet-stream";
 
-// Negotiate the best output format based on the Accept header.
-// Returns null if the original format should be preserved.
 const negotiateFormat = (
   accept: string | null,
 ): "image/avif" | "image/webp" | null => {
@@ -58,6 +69,22 @@ const negotiateFormat = (
   if (accept.includes("image/avif")) return "image/avif";
   if (accept.includes("image/webp")) return "image/webp";
   return null;
+};
+
+const encodeKey = (key: string) =>
+  key
+    .split("/")
+    .map(segment => encodeURIComponent(segment))
+    .join("/");
+
+const fetchFromDevProxy = async (key: string, method: "GET" | "HEAD") => {
+  const origin = getDevProxyOrigin();
+  if (!origin) return null;
+  try {
+    return await fetch(`${origin}/r2/${encodeKey(key)}`, { method });
+  } catch {
+    return null;
+  }
 };
 
 // Build a stable cache request incorporating the negotiated format so that
@@ -98,9 +125,19 @@ const buildPassthroughResponse = (
   );
 };
 
+// In astro dev (Vite), cloudflare:workers bindings are shimmed as undefined.
+// In wrangler dev or production, they are real objects.
+const hasBucket = !!(env as Record<string, unknown>).BLOG_BUCKET;
+
 export const GET: APIRoute = async ({ params, request }) => {
   const key = normalizeKey(params.key);
   if (!key) return notFound();
+
+  // astro dev: no real CF bindings — proxy to PUBLIC_SITE_URL
+  if (!hasBucket) {
+    const proxiedResponse = await fetchFromDevProxy(key, "GET");
+    return proxiedResponse ?? notFound();
+  }
 
   const ext = getExtension(key);
   const canTranscode = !PASSTHROUGH_EXTENSIONS.has(ext) && !!env.IMAGES;
@@ -150,6 +187,11 @@ export const GET: APIRoute = async ({ params, request }) => {
 export const HEAD: APIRoute = async ({ params }) => {
   const key = normalizeKey(params.key);
   if (!key) return notFound();
+
+  if (!hasBucket) {
+    const proxiedResponse = await fetchFromDevProxy(key, "HEAD");
+    return proxiedResponse ?? notFound();
+  }
 
   const object = await env.BLOG_BUCKET.head(key);
   if (!object) return notFound();
