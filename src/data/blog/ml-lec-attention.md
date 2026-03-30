@@ -34,7 +34,7 @@ transformer 的核心贡献是第一个把 self-attention 拉到一个更高位�
 
 我们看到 transformer 里的各种“小巧思”：多头注意力、QKV 的归一化、位置编码、decoder的causal mask……其实都是工程对 attention 的弱先验做补充. This is why it stands out.
 
-![点击输入文本](/r2/cited-by.png)
+![点击输入文本](/r2/attention/cited-by.png)
 
 ## 预备知识
 
@@ -91,7 +91,7 @@ $$
 
 naive transformer[^2] 模型由 $l$ 个相同的 Layer 组成，每个层分为两部分：self-attention 块和 MLP 块.
 
-![transformer](/r2/transformer-arch.png)
+![transformer](/r2/attention/transformer-arch.png)
 
 可训练模型参数量可用下面的公式估算[^param-estimate]
 
@@ -135,13 +135,13 @@ def attention(Q, K, V):
 
 你会发现历史是个惊人的回环：从最初 RNN 外置的 attention memory，到 transformer 把外部记忆内化成了序列内部的 self-attention，但 context window 终究有限，不可能把所有知识都塞进参数里，虽然模型可以再叠 block 层，但很快会遇到 compute bound 的情形，所以又出现了检索增强生成（RAG）外挂知识库的做法，而最近的一些工作又试图在 attention 外来表达 memory，作为大模型的原生能力.[^3]
 
-![mann](/r2/teaser-mann.png)
+![mann](/r2/attention/teaser-mann.png)
 
 我们相信，在不久的将来, 非常有可能出现一个比 attention 表达能力更强的模型来做到这一点.
 
 ### 多头注意力 MHA
 
-![attention](/r2/attention-block.png)
+![attention](/r2/attention/attention-block.png)
 
 那么为什么这里要做 scale，以及为什么要拆解成 multi-head 呢.
 
@@ -155,37 +155,39 @@ $d_k$ 越大方差越大，值就越极端，丢进 softmax 之后就会出现�
 
 所以这里做法和 CNN 的**多通道卷积核**——有的提取边缘，有的提取纹理，有的提取颜色，最后 `Concat` 起来，作为下一层的输入——是一致的.
 
-![bertviz](/r2/attention-vis-poster.png)
+![bertviz](/r2/attention/attention-vis-poster.png)
 
 有非常多的可解释性工作关注 heads specialization: 因为我们其实很难去选定 head 的个数（这相应的决定了每个头的维度）, 原论文也是通过 hyperparams sweep 得到的一个经验参数:
 
-![超参数调整](/r2/hyper-params.png)
+![超参数调整](/r2/attention/hyper-params.png)
 
 不过也有 paper 指出 Multiple subspaces 不是多头注意力的专属功能，你可以用一个*足够深*的 multi-layer single-head attention 来做等价. 从这个意义上说，多头的一大优势是它**训练稳定性高**.
 
-![deep-single-head](/r2/deep-single-head.png)
+![deep-single-head](/r2/attention/deep-single-head.png)
 
 但结论是: 模型训练出来后，实际只需要少数 heads 就能接近满性能，但如果头数太少，性能就会剧烈下降.
 
-![prune head](/r2/head-specification.png)
+![prune head](/r2/attention/head-specification.png)
 
 如果你对每个头做 PCA，发现单个头不低秩，每个头好像都在认真学自己的东西；但所有头拼接后的有效交互空间**极低秩**，它们在 query-key 内积空间里关注的“模式”高度相似.
 
-![Multi-Head Attention: Collaborate Instead of Concatenate](/r2/cumulative-captured-variance.png)
+![Multi-Head Attention: Collaborate Instead of Concatenate](/r2/attention/cumulative-captured-variance.png)
 
 concat 的聚合方式还是太拍脑袋了, 所以在多头注意力这边应该有更细粒度的架构，例如 share 一部分权重提供所有 head 通用的能力. MQA（多查询注意力）和 GQA（Grouped Query Attention）就是在压缩head数量.
 
-![many heads](/r2/many-attentions.png)
+![many heads](/r2/attention/many-attentions.png)
 
 ### 回到主线: LLM 到底咋 Predict Next Token?
 
-attention block 的输出是一个 context-aware 的 token 表示. 那拿到这个表示之后，模型在干什么？
+attention block 的输出是一个 context-aware 的 token 表示. 那拿到这个表示之后，模型还要干什么？
 
-原始的 transformer 论文里有 encoder 和 decoder 两个部分：encoder 负责把输入序列编码成一组 key-value，decoder 拿着这些 kv 做 cross-attention，再一步步生成输出. 这种结构在翻译任务上很自然——输入和输出语言是两个独立的序列. cross-attention 和 self-attention 的计算方式完全一样，区别只是 $Q$ 来自 decoder 自己，$K$、$V$ 来自 encoder 的输出：
+原始的 transformer 论文里有 encoder 和 decoder 两个部分：encoder 负责把输入序列编码成一组 key-value，decoder 拿着这些 kv 做 cross-attention，再一步步生成输出. 这种结构在翻译任务上很自然——输入和输出语言是两个独立的序列.
+
+cross-attention 和 self-attention 的计算方式完全一样，区别只是 $Q$ 来自 decoder 自己，$K$、$V$ 来自 encoder 的输出：
 
 $$\operatorname{CrossAttention}(Q_{\text{dec}},\, K_{\text{enc}},\, V_{\text{enc}}) = \operatorname{softmax}\!\left(\frac{Q_{\text{dec}} K_{\text{enc}}^{\top}}{\sqrt{d_k}}\right) V_{\text{enc}}$$
 
-但后来大家发现，encoder 其实没有必要. 一个足够深的 decoder-only 模型，已经有能力在上下文里自己"编"出任何信息. 目前几乎所有主流 LLM 都是 **decoder-only** 的架构.
+但后来大家发现，encoder 其实没有必要. 没有必要单独为序列对齐去独立两个模块, 一个足够深的 decoder-only 模型，已经有能力在上下文里自己"编"出任何信息, 目前几乎所有主流 LLM 都是 **decoder-only** 的架构.
 
 Decoder-only 模型做的事情极其简单粗暴: **给定前文，预测下一个 token**.
 
@@ -195,42 +197,62 @@ $$
 
 把一段文本的联合概率分解成一系列条件概率的乘积，这就是自回归（autoregressive）. 模型每次只往前看，不能偷看未来，训练和推理的目标是一致的.
 
-训练时，最后一层 attention block 的输出过一个 linear 层（unembedding matrix，维度是 hidden size → vocab size），得到每个位置对应词表的 logit，再 softmax 成概率分布，与真实的下一个 token 算交叉熵 loss.
+训练时，最后一层 attention block 的输出过一个线性层，得到每个位置对应词表的 logit，再 softmax 成概率分布，与真实的下一个 token 算交叉熵 loss.
 
 推理时，就是不断采样 next token 然后把它拼回序列继续生成，直到采样出 `<eos>`.
 
 ### masked self-attention
 
-训练的时候
+**推理时**需要一个 token 一个 token 地生成，没有办法并行——因为第 $t$ 步的输入依赖第 $t-1$ 步的输出，这是自回归的本质代价.
 
-```plaintext
-<bos>Q: Who is Adam?<eos>
-```
+**训练时**完全不同. 训练的目标序列是已知的，比如我们知道答案是 `Adam is an optimizer`，就可以构造一批监督信号：
 
-我们希望模型的回答是
+| 输入上文                    | 期望预测    |
+| --------------------------- | ----------- |
+| `<bos>Q: Who is Adam?<eos>` | `Adam`      |
+| `<bos>... Adam`             | `is`        |
+| `<bos>... Adam is`          | `an`        |
+| `<bos>... Adam is an`       | `optimizer` |
 
-```plaintext
-Adam is an optimizer.
-```
+朴素做法是把这四条分别跑四次前向，但这太浪费了. 注意到这四条输入其实是同一个序列的不同前缀——**整个序列只需要跑一次前向**，在 attention 里加一个约束：位置 $t$ 只能看到 $\leq t$ 的位置，就等价于同时算完了所有前缀的预测.
 
-训练的时候你可以放任模型自由发挥，但是这样收敛太慢了. 我们希望计算
+这个约束就是 causal mask：在计算注意力分数之后、softmax 之前，把上三角（未来位置）全部置为 $-\infty$：
 
-```plaintext
-<bos>Q: Who is Adam?<eos> # input 1
-<bos>Q: Who is Adam?<eos>Adam # input 2
-<bos>Q: Who is Adam?<eos>Adam is # input 3
-<bos>Q: Who is Adam?<eos>Adam is an # input 4
-```
+$$
+A_{ij} = \begin{cases} \dfrac{q_i \cdot k_j}{\sqrt{d_k}} & j \leq i \\ -\infty & j > i \end{cases}
+$$
 
-这四个作为输入，然后得到每一步的 logits 来算 loss.
+softmax 之后 $-\infty$ 变成 0，每个位置的 attention 权重天然只分配给自己和左边的 token. 一次前向就得到了序列所有位置的 logit，对应位置的 cross-entropy loss 加起来一起反传.
 
-这个在序列学习里有个专门的 teacher forcing 技巧，做的就是把 ground truth 直接喂给 decoder 作为输入，而不是用模型自己上一步的预测结果.
+这个训练技巧叫 **teacher forcing**：用 ground truth 序列作为输入（而不是模型自己上一步的预测），配合 causal mask 做到并行.
 
-但是串行计算太慢，attention 是可以并行算的. 理论上丢一个 sequence 进去，就可以得到一个 sequence 的结果. 但是模型不就能在位置 1 看到位置 2 的答案了？
+推理时没有 ground truth 可用，就只能一步步 autoregressive 地采样了——这也是训练和推理之间存在 exposure bias 的根源.
 
-causal mask 就是解决这个问题的，它是一个上三角为负无穷的矩阵，softmax之后上三角就变成0，效果就是每个位置只能attend到自己和之前的token，看不到未来.
+### KV Cache
 
-所以整个流程就是：teacher forcing 让你能并行训练整个序列，causal mask保证即使并行了模型也不会偷看未来，每个位置老老实实根据前文predict next token.
+推理时每生成一个新 token，都要对整个上下文跑一次 attention. 第 $t$ 步时序列长度是 $t$，计算量是 $O(t^2)$，生成 $T$ 个 token 总计算量是 $O(T^3)$——这显然撑不住长序列.
+
+但注意 causal mask 的性质：历史 token 的 $K$、$V$ 永远不会被未来改变. 位置 $i$ 的 $k_i = x_i W_K$，只依赖于 $x_i$，只要输入序列不变，$k_i$ 和 $v_i$ 就是常数.
+
+所以推理时可以把每一步算出的 $K$、$V$ 缓存下来，下一步只需要算新 token 的 $q_t$、$k_t$、$v_t$，然后把 $k_t$、$v_t$ 追加到缓存，用 $q_t$ 去跟完整的 $K_{1:t}$ 做 attention：
+
+$$
+\text{step } t: \quad o_t = \operatorname{softmax}\!\left(\frac{q_t\, K_{1:t}^\top}{\sqrt{d_k}}\right) V_{1:t}
+$$
+
+这样每一步的计算量从 $O(t^2)$ 降到 $O(t)$，总计算量从 $O(T^3)$ 降到 $O(T^2)$. 代价是显存：KV Cache 的大小是 $O(T \cdot l \cdot h)$，长上下文时显存压力很大，GQA/MQA 压缩 head 数量在推理侧的核心动机也在这里.
+
+### Efficient Attention
+
+Self-attention 的计算复杂度是 $O(n^2 d)$，显存是 $O(n^2)$——序列长度翻倍，计算量翻四倍，显存翻四倍. 这是 attention 最大的工程瓶颈.
+
+两条路线来解决这个问题.
+
+**近似 attention**：改变 attention 的数学，用稀疏或低秩近似换掉完整的 $n \times n$ 矩阵. Linformer 把 $K$、$V$ 投影到低秩空间，把复杂度压到 $O(n)$；BigBird 只让每个 token attend 到局部窗口 + 少量全局 token，复杂度降到 $O(n)$. 但近似必然有精度损失，实践中效果参差不齐.
+
+**精确 attention + IO 优化**：FlashAttention 不改数学，改的是 GPU 内存访问模式. 传统实现里 $n \times n$ 的注意力矩阵要先写进 HBM（显存），再读出来做 softmax，HBM 带宽是瓶颈. FlashAttention 用 tiling 把计算分块，全程在 SRAM（片上高速缓存）里完成，避免了 HBM 的大量读写. 数学结果完全一致，但实际速度快 2–4x，显存从 $O(n^2)$ 降到 $O(n)$.
+
+### prefill and decode
 
 ## 参考
 
